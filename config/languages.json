@@ -1,0 +1,96 @@
+{
+    "en": {
+        "title_main_menu": "CalCraze",
+        "menu_start": "1. Start Game",
+        "menu_help": "2. Help",
+        "menu_high_scores": "3. High Scores",
+        "menu_quit": "4. Quit",
+
+        "select_difficulty": "Select Difficulty",
+        "difficulty_beginner": "Beginner",
+        "difficulty_intermediate": "Intermediate",
+        "difficulty_advanced": "Advanced",
+        "press_esc_return": "Press ESC to return",
+
+        "help_title": "Help - CalCraze",
+        "help_lines": [
+            "Use the selected numbers and operators (+, -, *, /)",
+            "to match the target value.",
+            "Select 2-4 cells, choose operators, then press Enter.",
+            "Correct => Score up, Wrong => Penalty.",
+            "Press Cmd+H / Ctrl+H to toggle help in game."
+        ],
+
+        "score_label": "Score",
+        "high_score_label": "High Score",
+        "target_label": "Target",
+        "formula_label": "Formula",
+        "language_menu_title": "Select Language",
+        "language_english": "English",
+        "language_chinese": "Chinese (Simplified)",
+        "operator_plus": "+",
+        "operator_minus": "-",
+        "operator_multiply": "*",
+        "operator_divide": "/",
+
+        "round_label": "Round",
+        "time_label": "Time",
+        "game_over": "Game Over! Press Enter to return to menu.",
+        "feedback_correct": "Correct!",
+        "feedback_wrong": "Wrong!",
+        "feedback_timeout": "Time's up!",
+
+        "menu_new_game": "New Game",
+        "menu_pause": "Pause",
+        "menu_resume": "Resume",
+        "menu_settings": "Settings",
+        "menu_quit_game": "Quit Game"
+    },
+    "zh": {
+        "title_main_menu": "加減乘除",
+        "menu_start": "1. 開始遊戲",
+        "menu_help": "2. 幫助",
+        "menu_high_scores": "3. 最高分",
+        "menu_quit": "4. 退出",
+
+        "select_difficulty": "請選擇難度",
+        "difficulty_beginner": "初級",
+        "difficulty_intermediate": "中級",
+        "difficulty_advanced": "高級",
+        "press_esc_return": "按 ESC 返回",
+
+        "help_title": "幫助 - 加減乘除",
+        "help_lines": [
+            "使用選中的數字和運算符（+、-、*、/）",
+            "使結果等於目標值。",
+            "選2~4個格子，依次輸入運算符，然後按 Enter 驗證。",
+            "正確得分，錯誤扣分。",
+            "遊戲中可按 Cmd+H / Ctrl+H 查看幫助。"
+        ],
+
+        "score_label": "分數",
+        "high_score_label": "最高分",
+        "target_label": "目標",
+        "formula_label": "公式",
+        "language_menu_title": "選擇語言",
+        "language_english": "英文",
+        "language_chinese": "中文(繁體)",
+        "operator_plus": "＋",
+        "operator_minus": "－",
+        "operator_multiply": "×",
+        "operator_divide": "÷",
+
+        "round_label": "回合",
+        "time_label": "時間",
+        "game_over": "遊戲結束！按 Enter 返回選單。",
+        "feedback_correct": "正確！",
+        "feedback_wrong": "錯誤！",
+        "feedback_timeout": "超時！",
+
+        "menu_new_game": "新遊戲",
+        "menu_pause": "暫停",
+        "menu_resume": "繼續",
+        "menu_settings": "設置",
+        "menu_quit_game": "退出遊戲"
+    }
+}
