@@ -20,7 +20,7 @@
 
 ### 🐍 Prerequisites
 Ensure you have Python 3.11+ and `pygame` installed.
-Please ensure you install following in your env
+Install the following in your environment:
 ```bash
 pip install pygame googletrans==4.0.0-rc1
 ```
@@ -29,3 +29,78 @@ pip install pygame googletrans==4.0.0-rc1
    ```bash
    git clone https://github.com/yourusername/CalcRaze.git
    cd CalcRaze
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   python3.11 -m venv venv
+   source venv/bin/activate
+   pip install pygame googletrans
+   ```
+
+3. **Run the Game:**
+   ```bash
+   python3 calcraze.py
+   ```
+
+## ⚙️ Configuration
+CalcRaze stores settings in `config/settings.json` and language packs in `config/languages.json`. You can modify:
+
+- Window size
+- Grid size
+- Difficulty parameters (min/max numbers, rounds, and time limits)
+- Custom fonts (ensure system support for non-Latin characters)
+
+## 🎲 How to Play
+1. **Start the Game:** Select difficulty from the main menu.
+2. **Fill the Formula:** Choose numbers from the grid to replace placeholders (A, B, C).
+3. **Submit Your Answer:** Press Enter when ready.
+4. **Score Points:** Correct answers increase your score, while incorrect ones deduct points.
+5. **Complete Rounds:** Each game consists of multiple rounds. Finish them all to win!
+
+## 🕹️ Controls
+- **Arrow Keys:** Navigate menu options.
+- **Enter:** Confirm selection.
+- **Backspace:** Undo the last number selection.
+- **Ctrl+H / Cmd+H:** Toggle help menu.
+- **Esc:** Return to the previous menu.
+
+## 🖌️ Customization
+- **Logo:** Add a `logo.png` in the assets folder to display your custom logo in the menu.
+- **Languages:** Add translations in `config/languages.json`. Missing keys are auto-filled via Google Translate.
+- **Difficulty:** Adjust `settings.json` to customize rounds, time limits, and number ranges.
+
+## screenshots
+<!-- add screenshots from /screenshots/* -->
+## 📸 Screenshots
+
+Here are some screenshots of CalcRaze in action:
+
+![Main Menu](screenshots/main_menu.jpg)
+*Main Menu*
+
+![Gameplay](screenshots/game.jpg)
+*Gameplay*
+
+## 🚀 Roadmap
+- Add multiplayer mode (local and online).
+- Support more languages.
+- Expand formula complexity for advanced users.
+- Implement leaderboard and user profiles.
+
+## 🤝 Contributing
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repo and create a new branch.
+2. Make your changes and run tests.
+3. Submit a pull request with clear commit messages.
+
+## 📝 License
+This project is licensed under the MIT License.
+
+## 🧩 Acknowledgments
+- **pygame:** For powering the game engine.
+- **Google Translate API:** For automatic language translation.
+- **Open Source Community:** For inspiring creativity and innovation.
+
+🌟 Enjoy the thrill of mental math with CalcRaze! Test your skills, challenge your friends, and become a formula master! 🌟
