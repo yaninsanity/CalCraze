@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-CalcRaze -- your math tutor (Final Improved Complete Version)
+CalCraze -- your math tutor (Final Improved Complete Version)
 
 主要改进：
 1. 顶部 Bar 高 80，Logo（若有）置中显示，Slogan 显示于 Logo 下方，Menu 文字位于左上。
@@ -76,7 +76,7 @@ DEFAULT_SETTINGS = {
 
 DEFAULT_LANGUAGES = {
     "en": {
-        "title_main_menu": "CalcRaze - Formula Fill",
+        "title_main_menu": "CalCraze - Formula Fill",
         "menu_start": "Start Game",
         "menu_help": "Help",
         "menu_high_scores": "High Scores",
@@ -119,7 +119,7 @@ DEFAULT_LANGUAGES = {
         "operator_divide": "/"
     },
     "zh": {
-        "title_main_menu": "CalcRaze - 填空模式",
+        "title_main_menu": "CalCraze - 填空模式",
         "menu_start": "開始遊戲",
         "menu_help": "幫助",
         "menu_high_scores": "最高分",
@@ -803,7 +803,7 @@ def main():
     except Exception as e:
         print("背景音乐加载失败：", e)
     screen = pygame.display.set_mode((settings["window_width"], settings["window_height"]))
-    pygame.display.set_caption("CalcRaze -- your math tutor")
+    pygame.display.set_caption("CalCraze -- your math tutor")
     # 载入 logo
     logo_surf = None
     if os.path.exists(LOGO_FILE):

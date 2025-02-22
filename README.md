@@ -1,7 +1,7 @@
 
-# 🧠 CalcRaze - Formula Fill Math Game
+# 🧠 CalCraze - Formula Fill Math Game
 
-**CalcRaze** is an engaging and educational mental math game designed to challenge your brain with quick calculations and formula filling tasks. Whether you're looking to sharpen your math skills, enjoy a fun brain workout, or compete for the highest score, CalcRaze offers an exciting experience for players of all ages.
+**CalCraze** is an engaging and educational mental math game designed to challenge your brain with quick calculations and formula filling tasks. Whether you're looking to sharpen your math skills, enjoy a fun brain workout, or compete for the highest score, CalCraze offers an exciting experience for players of all ages.
 
 ## 🎮 Features
 
@@ -27,8 +27,8 @@ pip install pygame googletrans==4.0.0-rc1
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/yourusername/CalcRaze.git
-   cd CalcRaze
+   git clone https://github.com/yourusername/CalCraze.git
+   cd CalCraze
    ```
 
 2. **Install Dependencies:**
@@ -44,7 +44,7 @@ pip install pygame googletrans==4.0.0-rc1
    ```
 
 ## ⚙️ Configuration
-CalcRaze stores settings in `config/settings.json` and language packs in `config/languages.json`. You can modify:
+CalCraze stores settings in `config/settings.json` and language packs in `config/languages.json`. You can modify:
 
 - Window size
 - Grid size
@@ -74,7 +74,7 @@ CalcRaze stores settings in `config/settings.json` and language packs in `config
 <!-- add screenshots from /screenshots/* -->
 ## 📸 Screenshots
 
-Here are some screenshots of CalcRaze in action:
+Here are some screenshots of CalCraze in action:
 
 ![Main Menu](screenshots/main_menu.jpg)
 *Main Menu*
@@ -103,4 +103,4 @@ This project is licensed under the MIT License.
 - **Google Translate API:** For automatic language translation.
 - **Open Source Community:** For inspiring creativity and innovation.
 
-🌟 Enjoy the thrill of mental math with CalcRaze! Test your skills, challenge your friends, and become a formula master! 🌟
+🌟 Enjoy the thrill of mental math with CalCraze! Test your skills, challenge your friends, and become a formula master! 🌟

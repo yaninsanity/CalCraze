@@ -5,7 +5,7 @@ rm -rf build dist __pycache__
 
 # 生成新的spec文件（包含所有依赖）
 pyi-makespec --onefile --windowed \
---name CalcRaze \
+--name CalCraze \
 --add-data "assets:Resources/assets" \
 --add-data "config:Resources/config" \
 --hidden-import pygame._macosx \
@@ -14,20 +14,20 @@ pyi-makespec --onefile --windowed \
 calcraze.py
 
 # 修改spec文件确保资源正确嵌入
-sed -i '' 's/datas=\[\]/datas=[("assets", "Resources/assets"), ("config", "Resources/config")]/g' CalcRaze.spec
+sed -i '' 's/datas=\[\]/datas=[("assets", "Resources/assets"), ("config", "Resources/config")]/g' CalCraze.spec
 
 # 执行打包
-pyinstaller --noconfirm CalcRaze.spec
+pyinstaller --noconfirm CalCraze.spec
 
 # 强制签名（即使没有开发者证书）
-codesign --force --deep --sign - dist/CalcRaze.app
+codesign --force --deep --sign - dist/CalCraze.app
 
 # 生成用户友好的DMG
-hdiutil create -volname CalcRaze \
--srcfolder dist/CalcRaze.app \
+hdiutil create -volname CalCraze \
+-srcfolder dist/CalCraze.app \
 -ov -format UDZO \
 -fs HFS+ \
 -imagekey zlib-level=9 \
-CalcRaze.dmg
+CalCraze.dmg
 
-echo "打包完成！请将 CalcRaze.dmg 发送给朋友。"
+echo "打包完成！请将 CalCraze.dmg 发送给朋友。"
