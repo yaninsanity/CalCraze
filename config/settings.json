@@ -6,28 +6,29 @@
     "cell_size": 100,
     "fps": 30,
     "difficulty": {
-      "beginner": {
-        "min": 1,
-        "max": 9,
-        "target_min": 5,
-        "target_max": 20
-      },
-      "intermediate": {
-        "min": 1,
-        "max": 15,
-        "target_min": 10,
-        "target_max": 50
-      },
-      "advanced": {
-        "min": 1,
-        "max": 20,
-        "target_min": 20,
-        "target_max": 100
-      }
+        "beginner": {
+            "min": 1,
+            "max": 9,
+            "target_min": 5,
+            "target_max": 20
+        },
+        "intermediate": {
+            "min": 1,
+            "max": 15,
+            "target_min": 10,
+            "target_max": 50
+        },
+        "advanced": {
+            "min": 1,
+            "max": 20,
+            "target_min": 20,
+            "target_max": 100
+        }
     },
     "font_paths": {
-      "en": "assets/fonts/Roboto-Regular.ttf",
-      "zh": "assets/fonts/jf-openhuninn-2.1.ttf"
-    }
-  }
-  
+        "en": "assets/fonts/Roboto-Regular.ttf",
+        "zh": "assets/fonts/jf-openhuninn-2.1.ttf"
+    },
+    "music_on": true,
+    "current_difficulty": "beginner"
+}

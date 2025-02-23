@@ -1,64 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-CalCraze -- your math tutor (Final Improved Complete Version)
-
-主要改进：
-1. 顶部 Bar 高 80，Logo（若有）置中显示，Slogan 显示于 Logo 下方，Menu 文字位于左上。
-2. 语言选单、主选单、难度选单均采用上下键高亮，选中的选项后面附加 " ->" 提示，并增加滑动动画。
-3. 自动过滤会产生小数结果的公式骨架，确保所有题目结果皆为整数。
-4. 为避免字体问题，采用 pygame.font.SysFont(None, size) 系统字体（请确保系统有支持中文的字体）。
-5. 菜单中提供「新游戏 / 暂停 / 设置 / 离开」功能。
-6. 增加回撤功能：用户可按 Backspace 删除最后选择的数字，或点击已选择数字取消选择。
-7. 添加单元格悬停时的发光动画以及帮助菜单滚动支持，整体交互更具游戏感。
-8. 游戏过程中持续播放背景音乐（assets/bgm.mp3），请确保该文件存在。
-9. 所有功能均在单一文件中定义，便于打包成可执行文件。
-
-请确保：
-- config/settings.json 与 config/languages.json（若不存在则自动生成）
-- assets/logo.png 可选（若存在则显示）
-- assets/bgm.mp3 为背景音乐文件（请自行提供）
-- 系统中安装有支持中文的字体（否则中文可能显示为方块）
-"""
-
-import pygame, sys, os, json, random, traceback, time
+import logging
+import pygame, sys, os, json, random, time, traceback
+from math import sin, cos, tan, floor, ceil, log, exp, sqrt
 from googletrans import Translator
 
-# ------------------- 动画参数 -------------------
-MENU_ANIMATION_SPEED = 15   # 菜单滑动速度
-CELL_GLOW_DURATION = 0.3     # 单元格发光效果持续时间（秒）
-
-# ------------------- 安全运算函数 -------------------
-def safe_eval(expr):
-    try:
-        from math import sin, cos, tan, floor, ceil, log, exp, sqrt
-        allowed = {"__builtins__": None, "sin": sin, "cos": cos, "tan": tan,
-                   "floor": floor, "ceil": ceil, "log": log, "exp": exp, "sqrt": sqrt}
-        return eval(expr, allowed)
-    except:
-        return None
-
-# ------------------- 颜色常数 -------------------
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
-LIGHT_GRAY = (230, 230, 230)
-GREEN = (0, 200, 0)
-BLUE = (100, 100, 255)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-DARK_GRAY = (50, 50, 50)
-BG_COLOR = (240, 240, 240)
-
-# ------------------- 目录与文件 -------------------
-CONFIG_DIR = "config"
-ASSETS_DIR = "assets"
+# ------------------- 常量与默认配置 -------------------
+CONFIG_DIR      = "config"
+ASSETS_DIR      = "assets"
 HIGH_SCORE_FILE = "highscore.dat"
-LOGO_FILE = os.path.join(ASSETS_DIR, "logo.png")
-BGM_FILE = os.path.join(ASSETS_DIR, "bgm.mp3")  # 背景音乐文件
+LOGO_FILE       = os.path.join(ASSETS_DIR, "logo.png")
+BGM_FILE        = os.path.join(ASSETS_DIR, "bgm.mp3")
 
-# ------------------- 默认设置与语言 -------------------
+MENU_ANIMATION_SPEED = 15
+CELL_GLOW_DURATION   = 0.3
+
+BLACK      = (0, 0, 0)
+WHITE      = (255, 255, 255)
+GRAY       = (200, 200, 200)
+LIGHT_GRAY = (230, 230, 230)
+GREEN      = (0, 200, 0)
+BLUE       = (100, 100, 255)
+RED        = (255, 0, 0)
+YELLOW     = (255, 255, 0)
+DARK_GRAY  = (50, 50, 50)
+BG_COLOR   = (240, 240, 240)
+
 DEFAULT_SETTINGS = {
     "default_language": "en",
     "window_width": 600,
@@ -66,12 +34,13 @@ DEFAULT_SETTINGS = {
     "grid_size": 4,
     "cell_size": 100,
     "fps": 30,
+    "music_on": True,
     "difficulty": {
-        "beginner": {"min": 1, "max": 9, "rounds": 7, "time_limit": 30},
-        "intermediate": {"min": 1, "max": 15, "rounds": 10, "time_limit": 40},
-        "advanced": {"min": 1, "max": 20, "rounds": 15, "time_limit": 50}
+        "beginner":      {"min": 1, "max": 9,  "rounds": 7,  "time_limit": 30},
+        "intermediate":  {"min": 1, "max": 15, "rounds": 10, "time_limit": 40},
+        "advanced":      {"min": 1, "max": 20, "rounds": 15, "time_limit": 50}
     },
-    "font_paths": {"en": None, "zh": None}
+    "current_difficulty": "beginner"
 }
 
 DEFAULT_LANGUAGES = {
@@ -116,7 +85,14 @@ DEFAULT_LANGUAGES = {
         "operator_plus": "+",
         "operator_minus": "-",
         "operator_multiply": "*",
-        "operator_divide": "/"
+        "operator_divide": "/",
+        "settings_title": "Settings",
+        "toggle_music": "Music: ",
+        "change_difficulty": "Change Difficulty",
+        "change_language": "Change Language",
+        "language_prompt": "Select Language",
+        "back": "Back",
+        "paused_text": "PAUSED"
     },
     "zh": {
         "title_main_menu": "CalCraze - 填空模式",
@@ -148,6 +124,9 @@ DEFAULT_LANGUAGES = {
         "feedback_wrong": "錯誤！",
         "feedback_timeout": "超時！",
         "menu_new_game": "新遊戲",
+        "menu_help": "幫助",
+        "menu_high_scores": "最高分",
+        "menu_quit": "離開",
         "menu_pause": "暫停",
         "menu_resume": "繼續",
         "menu_settings": "設定",
@@ -158,11 +137,18 @@ DEFAULT_LANGUAGES = {
         "operator_plus": "＋",
         "operator_minus": "－",
         "operator_multiply": "×",
-        "operator_divide": "÷"
+        "operator_divide": "÷",
+        "settings_title": "設定",
+        "toggle_music": "音樂：",
+        "change_difficulty": "更改難度",
+        "change_language": "更改語言",
+        "language_prompt": "選擇語言",
+        "back": "返回",
+        "paused_text": "暫停中"
     }
 }
 
-# ------------------- JSON 读写 -------------------
+# ------------------- JSON 读写函数 -------------------
 def load_json(path, default_data):
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -170,21 +156,34 @@ def load_json(path, default_data):
             json.dump(default_data, f, ensure_ascii=False, indent=4)
         return default_data
     else:
-        with open(path, "r", encoding="utf-8") as f:
-            try:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
-            except:
-                return default_data
+        except:
+            return default_data
+
+def save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 def load_settings():
-    return load_json(os.path.join(CONFIG_DIR, "settings.json"), DEFAULT_SETTINGS)
+    s = load_json(os.path.join(CONFIG_DIR, "settings.json"), DEFAULT_SETTINGS)
+    if "music_on" not in s:
+        s["music_on"] = True
+    if "current_difficulty" not in s:
+        s["current_difficulty"] = "beginner"
+    save_json(os.path.join(CONFIG_DIR, "settings.json"), s)
+    return s
+
+def save_settings(s):
+    save_json(os.path.join(CONFIG_DIR, "settings.json"), s)
 
 def load_languages():
     return load_json(os.path.join(CONFIG_DIR, "languages.json"), DEFAULT_LANGUAGES)
 
-def save_languages(lang_dict):
-    with open(os.path.join(CONFIG_DIR, "languages.json"), "w", encoding="utf-8") as f:
-        json.dump(lang_dict, f, ensure_ascii=False, indent=4)
+def save_languages(langs):
+    save_json(os.path.join(CONFIG_DIR, "languages.json"), langs)
 
 def load_high_score():
     if os.path.exists(HIGH_SCORE_FILE):
@@ -230,11 +229,25 @@ def ensure_language(lang_dict, lang_code):
         save_languages(lang_dict)
     return lang_dict.get(lang_code, DEFAULT_LANGUAGES["en"])
 
+# ------------------- 安全运算函数 -------------------
+def safe_eval(expr):
+    try:
+        allowed = {"__builtins__": None, "sin": sin, "cos": cos, "tan": tan,
+                   "floor": floor, "ceil": ceil, "log": log, "exp": exp, "sqrt": sqrt}
+        return eval(expr, allowed)
+    except:
+        return None
+
 # ------------------- 系统字体函数 -------------------
 def sys_font(size=36):
-    return pygame.font.SysFont(None, size)
+    try:
+        return pygame.font.Font(os.path.join("assets","fonts", "jf-openhuninn-2.1.ttf"), size)
+    except Exception as e:
+        logging.warning(f"Failed to load custom Chinese font: {e}")
+        return pygame.font.SysFont("PingFang TC", size)  # 尝试系统自带的
 
-# ------------------- 垂直选单函数（带动画） -------------------
+
+# ------------------- 全屏垂直选单 -------------------
 def run_vertical_menu(screen, bar_height, logo_surf, font, title, items):
     clock = pygame.time.Clock()
     selected = 0
@@ -245,12 +258,12 @@ def run_vertical_menu(screen, bar_height, logo_surf, font, title, items):
         screen.fill(BG_COLOR)
         pygame.draw.rect(screen, DARK_GRAY, (0, 0, screen.get_width(), bar_height))
         if logo_surf:
-            logo_rect = logo_surf.get_rect()
-            logo_rect.centerx = screen.get_width() // 2
-            logo_rect.centery = bar_height // 2
-            screen.blit(logo_surf, logo_rect)
+            lr = logo_surf.get_rect()
+            lr.centerx = screen.get_width() // 2
+            lr.centery = bar_height // 2
+            screen.blit(logo_surf, lr)
         t_surf = font.render(title, True, BLACK)
-        t_rect = t_surf.get_rect(center=(screen.get_width() // 2, bar_height + 50 + y_offset))
+        t_rect = t_surf.get_rect(center=(screen.get_width() // 2, bar_height+50+y_offset))
         screen.blit(t_surf, t_rect)
         start_y = bar_height + 120 + y_offset
         gap = 50
@@ -263,8 +276,7 @@ def run_vertical_menu(screen, bar_height, logo_surf, font, title, items):
         clock.tick(60)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                pygame.quit(); sys.exit()
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
                     return None
@@ -279,10 +291,10 @@ def run_vertical_menu(screen, bar_height, logo_surf, font, title, items):
                 elif e.key == pygame.K_RETURN:
                     for i in range(5):
                         scale = 1 + 0.1 * i
-                        temp = font.render(items[selected] + " ->", True, BLUE)
-                        temp = pygame.transform.smoothscale(temp, (int(temp.get_width()*scale), int(temp.get_height()*scale)))
+                        tmp = font.render(items[selected] + " ->", True, BLUE)
+                        tmp = pygame.transform.smoothscale(tmp, (int(tmp.get_width() * scale), int(tmp.get_height() * scale)))
                         screen.fill(BG_COLOR)
-                        screen.blit(temp, temp.get_rect(center=(screen.get_width()//2, screen.get_height()//2)))
+                        screen.blit(tmp, tmp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2)))
                         pygame.display.flip()
                         clock.tick(60)
                     return selected
@@ -291,88 +303,152 @@ def run_vertical_menu(screen, bar_height, logo_surf, font, title, items):
         else:
             y_offset = 0
 
-# ------------------- 语言选单 -------------------
-def show_language_menu(screen, logo_surf, lang_dict):
-    font = sys_font(36)
-    bar_height = 80
-    items = [lang_dict["en"]["language_english"], lang_dict["en"]["language_chinese"]]
-    idx = run_vertical_menu(screen, bar_height, logo_surf, font, lang_dict["en"]["language_menu_title"], items)
-    if idx is None:
-        return None
-    return "en" if idx == 0 else "zh"
-
-# ------------------- 帮助视窗（支持滚动） -------------------
-def show_help_menu(screen, ld):
-    font_big = sys_font(36)
-    font_small = sys_font(24)
-    running = True
-    scroll_offset = 0
-    content_height = len(ld["help_lines"]) * 40 + 200
+# ------------------- 弹窗菜单 -------------------
+def run_popup_menu(screen, items, font, title="Menu"):
     clock = pygame.time.Clock()
+    running = True
+    selected = 0
+    w, h = 300, 200 + len(items) * 40
+    popup = pygame.Surface((w, h))
+    popup_rect = popup.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    bar_height = 40
+
+    def draw_popup():
+        overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        screen.blit(overlay, (0, 0))
+        popup.fill(WHITE)
+        pygame.draw.rect(popup, BLACK, popup.get_rect(), 2)
+        t_surf = font.render(title, True, BLACK)
+        popup.blit(t_surf, (10, 10))
+        for i, (key, label, _) in enumerate(items):
+            clr = BLUE if i == selected else BLACK
+            lbl = font.render(label + (" ->" if i == selected else ""), True, clr)
+            popup.blit(lbl, (20, bar_height + 40 * i))
+        screen.blit(popup, popup_rect)
+
     while running:
-        for e in pygame.event.get():
-            if e.type == pygame.MOUSEBUTTONDOWN:
-                if e.button == 4:
-                    scroll_offset = min(0, scroll_offset + 20)
-                elif e.button == 5:
-                    scroll_offset = max(-(content_height - screen.get_height()), scroll_offset - 20)
-            elif e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
-                running = False
         screen.fill(BG_COLOR)
-        y = 150 + scroll_offset
-        for line in ld["help_lines"]:
-            ls = font_small.render(line, True, BLACK)
-            screen.blit(ls, (50, y))
-            y += 40
-        esc = font_small.render(ld["press_esc_return"], True, BLACK)
-        screen.blit(esc, (50, screen.get_height() - 50))
+        draw_popup()
         pygame.display.flip()
         clock.tick(60)
-
-# ------------------- 最高分视窗 -------------------
-def show_high_score_menu(screen, ld):
-    font_big = sys_font(36)
-    font_small = sys_font(24)
-    hs = load_high_score()
-    running = True
-    while running:
-        screen.fill(BG_COLOR)
-        txt = font_big.render(f"{ld['high_score_label']}: {hs}", True, BLACK)
-        screen.blit(txt, (150, 150))
-        esc = font_small.render(ld["press_esc_return"], True, BLACK)
-        screen.blit(esc, (150, 250))
-        pygame.display.flip()
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                pygame.quit(); sys.exit()
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
                     running = False
+                elif e.key == pygame.K_UP:
+                    selected = (selected - 1) % len(items)
+                elif e.key == pygame.K_DOWN:
+                    selected = (selected + 1) % len(items)
+                elif e.key == pygame.K_RETURN:
+                    items[selected][2]()
+                    running = False
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                if not popup_rect.collidepoint(e.pos):
+                    running = False
+                else:
+                    rel_x = e.pos[0] - popup_rect.x
+                    rel_y = e.pos[1] - popup_rect.y
+                    if rel_y > bar_height:
+                        i = (rel_y - bar_height) // 40
+                        if 0 <= i < len(items):
+                            items[i][2]()
+                            running = False
+
+# ------------------- 语言切换弹窗 -------------------
+def run_language_popup(screen, ld, languages, settings):
+    font = sys_font(28)
+    items = [
+        ("en", "English", None),
+        ("zh", "中文(繁體)", None)
+    ]
+    clock = pygame.time.Clock()
+    running = True
+    selected = 0
+    w, h = 280, 200 + len(items) * 40
+    popup = pygame.Surface((w, h))
+    popup_rect = popup.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    bar_height = 40
+    title = ld.get("language_prompt", "Select Language")
+    def draw_popup():
+        overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        screen.blit(overlay, (0, 0))
+        popup.fill(WHITE)
+        pygame.draw.rect(popup, BLACK, popup.get_rect(), 2)
+        t_surf = font.render(title, True, BLACK)
+        popup.blit(t_surf, (10, 10))
+        for i, (code, label, _) in enumerate(items):
+            clr = BLUE if i == selected else BLACK
+            lbl = font.render(label + (" ->" if i == selected else ""), True, clr)
+            popup.blit(lbl, (20, bar_height + 40 * i))
+        screen.blit(popup, popup_rect)
+    while running:
+        screen.fill(BG_COLOR)
+        draw_popup()
+        pygame.display.flip()
+        clock.tick(60)
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
+            elif e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_ESCAPE:
+                    running = False
+                elif e.key == pygame.K_UP:
+                    selected = (selected - 1) % len(items)
+                elif e.key == pygame.K_DOWN:
+                    selected = (selected + 1) % len(items)
+                elif e.key == pygame.K_RETURN:
+                    chosen = items[selected][0]
+                    settings["default_language"] = chosen
+                    save_settings(settings)
+                    ensure_language(languages, chosen)
+                    running = False
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                if not popup_rect.collidepoint(e.pos):
+                    running = False
+                else:
+                    ry = e.pos[1] - popup_rect.y
+                    if ry > bar_height:
+                        i = (ry - bar_height) // 40
+                        if 0 <= i < len(items):
+                            chosen = items[i][0]
+                            settings["default_language"] = chosen
+                            save_settings(settings)
+                            ensure_language(languages, chosen)
+                            running = False
 
 # ------------------- 难度选单 -------------------
-def show_difficulty_menu(screen, ld):
+def run_difficulty_menu(screen, ld):
     font_big = sys_font(48)
-    bar_height = 80
-    items = [ld["difficulty_beginner"], ld["difficulty_intermediate"], ld["difficulty_advanced"]]
-    idx = run_vertical_menu(screen, bar_height, None, font_big, ld["select_difficulty"], items)
-    if idx is None:
+    items = [
+        ld["difficulty_beginner"],
+        ld["difficulty_intermediate"],
+        ld["difficulty_advanced"],
+        ld["back"]
+    ]
+    idx = run_vertical_menu(screen, 80, None, font_big, ld["select_difficulty"], items)
+    if idx is None or idx == 3:
         return None
-    if idx == 0:
+    elif idx == 0:
         return "beginner"
     elif idx == 1:
         return "intermediate"
-    else:
+    elif idx == 2:
         return "advanced"
 
-# ------------------- 主选单 -------------------
-def show_main_menu(screen, ld, language):
-    font_big = sys_font(48)
-    bar_height = 80
-    items = [ld["menu_start"], ld["menu_help"], ld["menu_high_scores"], ld["menu_quit"]]
-    return run_vertical_menu(screen, bar_height, None, font_big, ld["title_main_menu"], items)
+# ------------------- 生成整数公式 -------------------
+SKELETONS = [
+    ["A", "+", "B"],
+    ["A", "-", "B", "*", "C"],
+    ["(", "A", "+", "B", ")", "/", "C"],
+    ["A", "*", "B", "-", "C"],
+    ["(", "A", "-", "B", ")", "*", "C"],
+    ["A", "+", "B", "/", "C"]
+]
 
-# ------------------- 生成整数结果的公式 -------------------
 def generate_integer_formula(skeletons, config):
     while True:
         sk = random.choice(skeletons)
@@ -401,99 +477,60 @@ class Cell:
         self.rect = pygame.Rect(x, y, size, size)
         self.selected = False
 
-# ------------------- 顶部选单类 -------------------
+# ------------------- 顶部菜单类（弹窗） -------------------
 class TopMenu:
     def __init__(self, game, font):
         self.game = game
         self.font = font
         self.menu_bar_rect = pygame.Rect(0, 0, game.settings["window_width"], 80)
-        self.menu_items = [
-            ("menu_new_game", self.action_new_game),
-            ("menu_pause", self.action_pause_or_resume),
-            ("menu_settings", self.action_settings),
-            ("menu_quit_game", self.action_quit)
-        ]
-        self.item_rects = []
         self.menu_open = False
-        self.dropdown_rect = None
 
     def draw(self):
         pygame.draw.rect(self.game.screen, DARK_GRAY, self.menu_bar_rect)
         if self.game.logo_surf:
-            logo_rect = self.game.logo_surf.get_rect()
-            logo_rect.center = (self.menu_bar_rect.centerx, self.menu_bar_rect.centery)
-            self.game.screen.blit(self.game.logo_surf, logo_rect)
-        slogan_surf = self.font.render("calcraze -- your math tutor", True, WHITE)
-        s_rect = slogan_surf.get_rect(center=(self.menu_bar_rect.centerx, self.menu_bar_rect.centery+35))
-        self.game.screen.blit(slogan_surf, s_rect)
-        menu_txt = self.font.render("Menu", True, WHITE)
-        self.game.screen.blit(menu_txt, (10, 10))
-        if self.menu_open:
-            dw = 160
-            dh = 30 * len(self.menu_items)
-            self.dropdown_rect = pygame.Rect(0, self.menu_bar_rect.bottom, dw, dh)
-            pygame.draw.rect(self.game.screen, LIGHT_GRAY, self.dropdown_rect)
-            pygame.draw.rect(self.game.screen, BLACK, self.dropdown_rect, 2)
-            self.item_rects = []
-            for i, (k, _) in enumerate(self.menu_items):
-                r = pygame.Rect(0, self.menu_bar_rect.bottom + i * 30, dw, 30)
-                self.item_rects.append((r, k))
-                t_surf = self.font.render(self.game.lang_data.get(k, k), True, BLACK)
-                self.game.screen.blit(t_surf, (5, self.menu_bar_rect.bottom + i * 30 + 5))
-
+            lr = self.game.logo_surf.get_rect()
+            lr.center = (self.menu_bar_rect.centerx, self.menu_bar_rect.centery)
+            self.game.screen.blit(self.game.logo_surf, lr)
+        slogan = self.font.render("calcraze -- your math tutor", True, WHITE)
+        sr = slogan.get_rect(center=(self.menu_bar_rect.centerx, self.menu_bar_rect.centery+35))
+        self.game.screen.blit(slogan, sr)
+        txt = self.font.render("Menu", True, WHITE)
+        self.game.screen.blit(txt, (10, 10))
+    
     def handle_event(self, e):
         if e.type == pygame.MOUSEBUTTONDOWN:
-            pos = pygame.mouse.get_pos()
-            if self.menu_bar_rect.collidepoint(pos):
-                self.menu_open = not self.menu_open
-            elif self.menu_open and self.dropdown_rect and self.dropdown_rect.collidepoint(pos):
-                for r, k in self.item_rects:
-                    if r.collidepoint(pos):
-                        for (k2, action) in self.menu_items:
-                            if k2 == k:
-                                action()
-                                break
-                        self.menu_open = False
-                        break
-            else:
-                self.menu_open = False
+            if self.menu_bar_rect.collidepoint(e.pos):
+                self.show_popup_menu()
 
-    def action_new_game(self):
-        self.game.reset_game()
-
-    def action_pause_or_resume(self):
+    def show_popup_menu(self):
         if self.game.paused:
-            self.game.paused = False
-            self.game.start_time = time.time()
+            pause_label = self.game.lang_data["menu_resume"]
         else:
-            self.game.paused = True
+            pause_label = self.game.lang_data["menu_pause"]
+        items = [
+            ("new_game", self.game.lang_data["menu_new_game"], self.game.reset_game),
+            ("pause",    pause_label, self.game.toggle_pause),
+            ("settings", self.game.lang_data["menu_settings"], self.show_settings),
+            ("quit_game", self.game.lang_data["menu_quit_game"], self.quit_game)
+        ]
+        run_popup_menu(self.game.screen, items, self.font, "Menu")
 
-    def action_settings(self):
-        print("Settings selected (placeholder)")
+    def show_settings(self):
+        show_settings_menu(self.game.screen, self.game.lang_data, self.game.settings)
 
-    def action_quit(self):
+    def quit_game(self):
         pygame.quit()
         sys.exit()
 
-# ------------------- 游戏公式骨架 -------------------
-SKELETONS = [
-    ["A", "+", "B"],
-    ["A", "-", "B", "*", "C"],
-    ["(", "A", "+", "B", ")", "/", "C"],
-    ["A", "*", "B", "-", "C"],
-    ["(", "A", "-", "B", ")", "*", "C"],
-    ["A", "+", "B", "/", "C"]
-]
-
 # ------------------- 游戏主类 -------------------
 class FormulaFillGame:
-    def __init__(self, screen, settings, ld, language="en", difficulty="beginner"):
+    def __init__(self, screen, settings, ld, language="en"):
         self.screen = screen
         self.settings = settings
         self.lang_data = ld
         self.language = language
-        self.difficulty = difficulty
-        self.config = settings["difficulty"][difficulty]
+        self.difficulty = settings.get("current_difficulty", "beginner")
+        self.config = settings["difficulty"][self.difficulty]
         self.grid_size = settings["grid_size"]
         self.cell_size = settings["cell_size"]
         self.fps = settings["fps"]
@@ -505,7 +542,7 @@ class FormulaFillGame:
         self.score = 0
         self.high_score = load_high_score()
         self.current_round = 1
-        self.total_rounds = self.config.get("rounds", 5)
+        self.total_rounds = self.config.get("rounds", 7)
         self.time_limit = self.config.get("time_limit", 30)
         self.start_time = time.time()
         self.paused = False
@@ -514,6 +551,7 @@ class FormulaFillGame:
         self.running = True
         self.feedback_message = ""
         self.feedback_time = 0
+
         self.logo_surf = None
         if os.path.exists(LOGO_FILE):
             try:
@@ -521,9 +559,11 @@ class FormulaFillGame:
                 self.logo_surf = pygame.transform.scale(tmp, (135, 135))
             except:
                 self.logo_surf = None
+
         self.top_menu = TopMenu(self, self.menu_font)
         self.menu_bar_height = 80
         self.scoreboard_height = 120
+
         self.grid = []
         self.skeleton = []
         self.placeholder_count = 0
@@ -535,6 +575,7 @@ class FormulaFillGame:
     def init_game(self):
         self.init_grid()
         self.init_formula()
+        self.start_time = time.time()
 
     def reset_game(self):
         self.score = 0
@@ -542,8 +583,19 @@ class FormulaFillGame:
         self.running = True
         self.selected_cells = []
         self.paused = False
+        self.feedback_message = ""
+        self.feedback_time = 0
         self.init_game()
-        self.start_time = time.time()
+
+    def toggle_pause(self):
+        if self.paused:
+            self.paused = False
+            self.start_time = time.time()
+            if self.settings["music_on"]:
+                pygame.mixer.music.unpause()
+        else:
+            self.paused = True
+            pygame.mixer.music.pause()
 
     def init_grid(self):
         self.grid = []
@@ -564,12 +616,7 @@ class FormulaFillGame:
         self.target_value = val
         placeholders = [s for s in sk if s in ["A", "B", "C", "D"]]
         self.placeholder_count = len(placeholders)
-        disp = []
-        for s in sk:
-            if s in ["A", "B", "C", "D"]:
-                disp.append("?")
-            else:
-                disp.append(s)
+        disp = ["?" if s in ["A", "B", "C", "D"] else s for s in sk]
         self.formula_str = " ".join(disp)
 
     def get_dynamic_formula(self):
@@ -594,6 +641,10 @@ class FormulaFillGame:
         pygame.draw.rect(self.screen, BLACK, scoreboard_rect, 2)
         self.draw_scoreboard(scoreboard_rect)
         self.draw_grid()
+        if self.paused:
+            p_text = self.lang_data.get("paused_text", "PAUSED")
+            p_surf = self.large_font.render(p_text, True, RED)
+            self.screen.blit(p_surf, p_surf.get_rect(center=(self.settings["window_width"]//2, self.settings["window_height"]//2)))
         if self.show_help:
             self.draw_help_overlay()
         pygame.display.flip()
@@ -609,25 +660,25 @@ class FormulaFillGame:
         self.screen.blit(self.font.render(hs_txt, True, BLACK), (300, rect.y + 10))
         self.screen.blit(self.font.render(rd_txt, True, BLACK), (20, rect.y + 50))
         self.screen.blit(self.font.render(tm_txt, True, BLACK), (300, rect.y + 50))
-        dyn_formula = self.get_dynamic_formula()
-        formula_disp = f"{self.lang_data['formula_label']}: {dyn_formula} = {self.target_value}"
+        dyn = self.get_dynamic_formula()
+        formula_disp = f"{self.lang_data['formula_label']}: {dyn} = {self.target_value}"
         self.screen.blit(self.small_font.render(formula_disp, True, BLACK), (20, rect.y + 85))
-        if self.feedback_message and time.time() - self.feedback_time < 1.5:
-            progress = (time.time() - self.feedback_time) / 1.5
-            alpha = int(255 * (1 - progress**2))
-            scale = 1 + 0.2 * (1 - progress)
+        if self.feedback_message and time.time()-self.feedback_time < 1.5:
+            prog = (time.time()-self.feedback_time) / 1.5
+            alpha = int(255*(1-prog**2))
+            scale = 1+0.2*(1-prog)
             fb_surf = self.font.render(self.feedback_message, True, YELLOW)
             fb_surf.set_alpha(alpha)
             scaled = pygame.transform.smoothscale(fb_surf, (int(fb_surf.get_width()*scale), int(fb_surf.get_height()*scale)))
-            rect_fb = scaled.get_rect(center=(self.settings["window_width"]//2, rect.y + 100))
-            self.screen.blit(scaled, rect_fb)
+            r_fb = scaled.get_rect(center=(self.settings["window_width"]//2, rect.y+100))
+            self.screen.blit(scaled, r_fb)
 
     def draw_grid(self):
         ox = 50
         oy = self.menu_bar_height + self.scoreboard_height + 20
         gw = self.grid_size * self.cell_size
         gh = self.grid_size * self.cell_size
-        pygame.draw.rect(self.screen, BLACK, (ox - 5, oy - 5, gw + 10, gh + 10), 2)
+        pygame.draw.rect(self.screen, BLACK, (ox-5, oy-5, gw+10, gh+10), 2)
         mouse_pos = pygame.mouse.get_pos()
         hover_cell = None
         for row in self.grid:
@@ -637,17 +688,17 @@ class FormulaFillGame:
                 pygame.draw.rect(self.screen, BLACK, c.rect, 2)
                 if c.rect.collidepoint(mouse_pos):
                     hover_cell = c
-                    glow_alpha = 50 + 50 * abs((pygame.time.get_ticks() % 1000) / 500 - 1)
+                    glow_alpha = 50 + 50 * abs((pygame.time.get_ticks() % 1000)/500 - 1)
                     glow = pygame.Surface((c.rect.width+4, c.rect.height+4), pygame.SRCALPHA)
-                    pygame.draw.rect(glow, (255,255,0, int(glow_alpha)), glow.get_rect(), border_radius=5)
+                    pygame.draw.rect(glow, (255,255,0,int(glow_alpha)), glow.get_rect(), border_radius=5)
                     self.screen.blit(glow, (c.rect.x-2, c.rect.y-2))
                 ns = self.font.render(str(c.number), True, BLACK)
                 nr = ns.get_rect(center=c.rect.center)
                 self.screen.blit(ns, nr)
         if self.cell_glow_time > 0 and hover_cell:
-            alpha = int(255 * (self.cell_glow_time / CELL_GLOW_DURATION))
+            alpha = int(255*(self.cell_glow_time/CELL_GLOW_DURATION))
             glow_circle = pygame.Surface((self.cell_size, self.cell_size), pygame.SRCALPHA)
-            pygame.draw.circle(glow_circle, (255,215,0, alpha), (self.cell_size//2, self.cell_size//2), self.cell_size//3)
+            pygame.draw.circle(glow_circle, (255,215,0,alpha), (self.cell_size//2, self.cell_size//2), self.cell_size//3)
             self.screen.blit(glow_circle, hover_cell.rect)
             self.cell_glow_time -= self.clock.get_time()/1000
 
@@ -657,15 +708,15 @@ class FormulaFillGame:
         help_surf = pygame.Surface((w, h))
         help_surf.fill(WHITE)
         pygame.draw.rect(help_surf, BLACK, help_surf.get_rect(), 2)
-        rect = help_surf.get_rect(center=(self.settings["window_width"] // 2, self.settings["window_height"] // 2))
+        r = help_surf.get_rect(center=(self.settings["window_width"]//2, self.settings["window_height"]//2))
         t_surf = self.font.render(self.lang_data["help_title"], True, BLACK)
-        help_surf.blit(t_surf, (20, 20))
+        help_surf.blit(t_surf, (20,20))
         y = 70
         for line in self.lang_data["help_lines"]:
             ls = self.small_font.render(line, True, BLACK)
-            help_surf.blit(ls, (20, y))
+            help_surf.blit(ls, (20,y))
             y += 30
-        self.screen.blit(help_surf, rect)
+        self.screen.blit(help_surf, r)
 
     def handle_click_cell(self, cell):
         if cell in self.selected_cells:
@@ -703,7 +754,6 @@ class FormulaFillGame:
             self.show_game_over()
         else:
             self.init_game()
-            self.start_time = time.time()
 
     def handle_time_over(self):
         self.score -= 5
@@ -718,7 +768,6 @@ class FormulaFillGame:
             self.show_game_over()
         else:
             self.init_game()
-            self.start_time = time.time()
 
     def show_game_over(self):
         done = True
@@ -726,13 +775,12 @@ class FormulaFillGame:
             self.screen.fill(BG_COLOR)
             ot = self.large_font.render(self.lang_data["game_over"], True, RED)
             st = self.large_font.render(f"{self.lang_data['score_label']}: {self.score}", True, BLACK)
-            self.screen.blit(ot, ot.get_rect(center=(self.settings["window_width"] // 2, 200)))
-            self.screen.blit(st, st.get_rect(center=(self.settings["window_width"] // 2, 300)))
+            self.screen.blit(ot, ot.get_rect(center=(self.settings["window_width"]//2, 200)))
+            self.screen.blit(st, st.get_rect(center=(self.settings["window_width"]//2, 300)))
             pygame.display.flip()
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                    pygame.quit(); sys.exit()
                 elif e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_RETURN:
                         done = False
@@ -755,8 +803,7 @@ class FormulaFillGame:
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     self.running = False
-                    pygame.quit()
-                    sys.exit()
+                    pygame.quit(); sys.exit()
                 self.top_menu.handle_event(e)
                 if e.type == pygame.KEYDOWN:
                     if (e.mod & pygame.KMOD_META and e.key == pygame.K_h) or (e.mod & pygame.KMOD_CTRL and e.key == pygame.K_h):
@@ -773,8 +820,8 @@ class FormulaFillGame:
                             if self.selected_cells:
                                 last = self.selected_cells.pop()
                                 last.selected = False
-                elif e.type == pygame.MOUSEBUTTONDOWN and not self.show_help:
-                    pos = pygame.mouse.get_pos()
+                elif e.type == pygame.MOUSEBUTTONDOWN and not self.show_help and not self.paused:
+                    pos = e.pos
                     cell = self.get_cell_by_pos(pos)
                     if cell:
                         self.handle_click_cell(cell)
@@ -784,7 +831,93 @@ class FormulaFillGame:
             self.draw()
         self.update_high_score()
 
-# ------------------- 主程序与选单 -------------------
+# ------------------- Settings 菜单 -------------------
+def show_settings_menu(screen, ld, settings):
+    font_big = sys_font(36)
+    while True:
+        music_label = ld["toggle_music"] + ("On" if settings["music_on"] else "Off")
+        items = [
+            music_label,
+            ld["change_difficulty"],
+            ld["change_language"],
+            ld["back"]
+        ]
+        idx = run_vertical_menu(screen, 80, None, font_big, ld["settings_title"], items)
+        if idx is None:
+            return
+        elif idx == 0:
+            settings["music_on"] = not settings["music_on"]
+            save_settings(settings)
+            if settings["music_on"]:
+                try:
+                    pygame.mixer.music.unpause()
+                except:
+                    pass
+            else:
+                pygame.mixer.music.pause()
+        elif idx == 1:
+            d = run_difficulty_menu(screen, ld)
+            if d:
+                settings["current_difficulty"] = d
+                save_settings(settings)
+        elif idx == 2:
+            run_language_popup(screen, ld, load_languages(), settings)
+            new_lang = settings.get("default_language", "en")
+            ld.update(load_languages().get(new_lang, DEFAULT_LANGUAGES["en"]))
+        elif idx == 3:
+            return
+
+# ------------------- 帮助、高分界面 -------------------
+def show_help_menu(screen, ld):
+    font_big = sys_font(36)
+    font_small = sys_font(24)
+    running = True
+    scroll_offset = 0
+    content_height = len(ld["help_lines"]) * 40 + 200
+    clock = pygame.time.Clock()
+    while running:
+        for e in pygame.event.get():
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                if e.button == 4:
+                    scroll_offset = min(0, scroll_offset + 20)
+                elif e.button == 5:
+                    scroll_offset = max(-(content_height - screen.get_height()), scroll_offset - 20)
+            elif e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_ESCAPE:
+                    running = False
+            elif e.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
+        screen.fill(BG_COLOR)
+        y = 150 + scroll_offset
+        for line in ld["help_lines"]:
+            ls = font_small.render(line, True, BLACK)
+            screen.blit(ls, (50, y))
+            y += 40
+        esc = font_small.render(ld["press_esc_return"], True, BLACK)
+        screen.blit(esc, (50, screen.get_height()-50))
+        pygame.display.flip()
+        clock.tick(60)
+
+def show_high_score_menu(screen, ld):
+    font_big = sys_font(36)
+    font_small = sys_font(24)
+    hs = load_high_score()
+    running = True
+    while running:
+        screen.fill(BG_COLOR)
+        txt = font_big.render(f"{ld['high_score_label']}: {hs}", True, BLACK)
+        screen.blit(txt, (150, 150))
+        esc = font_small.render(ld["press_esc_return"], True, BLACK)
+        screen.blit(esc, (150, 250))
+        pygame.display.flip()
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
+            elif e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_ESCAPE:
+                    running = False
+
+# ------------------- 主菜单 -------------------
 def main():
     os.makedirs(CONFIG_DIR, exist_ok=True)
     os.makedirs(ASSETS_DIR, exist_ok=True)
@@ -793,18 +926,17 @@ def main():
     default_lang = settings.get("default_language", "en")
     ensure_language(languages, default_lang)
     pygame.init()
-    # 初始化混音器，播放背景音乐
     try:
         pygame.mixer.init()
-        bgm_path = os.path.join(ASSETS_DIR, "bgm.mp3")
-        if os.path.exists(bgm_path):
-            pygame.mixer.music.load(bgm_path)
+        if os.path.exists(BGM_FILE):
+            pygame.mixer.music.load(BGM_FILE)
             pygame.mixer.music.play(-1)
+            if not settings["music_on"]:
+                pygame.mixer.music.pause()
     except Exception as e:
         print("背景音乐加载失败：", e)
     screen = pygame.display.set_mode((settings["window_width"], settings["window_height"]))
     pygame.display.set_caption("CalCraze -- your math tutor")
-    # 载入 logo
     logo_surf = None
     if os.path.exists(LOGO_FILE):
         try:
@@ -812,29 +944,23 @@ def main():
             logo_surf = pygame.transform.scale(tmp, (180, 180))
         except:
             logo_surf = None
-    # 语言选单
-    chosen_lang = show_language_menu(screen, logo_surf, languages)
-    if not chosen_lang:
-        chosen_lang = default_lang
-    my_lang_data = ensure_language(languages, chosen_lang)
-    # 主选单
+    my_lang_data = languages.get(default_lang, DEFAULT_LANGUAGES["en"])
     while True:
-        idx = run_vertical_menu(screen, 80, logo_surf, sys_font(36),
-            my_lang_data.get("title_main_menu", DEFAULT_LANGUAGES["en"]["title_main_menu"]),
+        idx = run_vertical_menu(
+            screen, 80, logo_surf, sys_font(36),
+            my_lang_data["title_main_menu"],
             [
-                my_lang_data.get("menu_start", DEFAULT_LANGUAGES["en"]["menu_start"]),
-                my_lang_data.get("menu_help", DEFAULT_LANGUAGES["en"]["menu_help"]),
-                my_lang_data.get("menu_high_scores", DEFAULT_LANGUAGES["en"]["menu_high_scores"]),
-                my_lang_data.get("menu_quit", DEFAULT_LANGUAGES["en"]["menu_quit"])
+                my_lang_data["menu_start"],
+                my_lang_data["menu_help"],
+                my_lang_data["menu_high_scores"],
+                my_lang_data["menu_quit"]
             ]
         )
         if idx is None:
             break
         elif idx == 0:
-            diff = show_difficulty_menu(screen, my_lang_data)
-            if diff is not None:
-                game = FormulaFillGame(screen, settings, my_lang_data, chosen_lang, diff)
-                game.run()
+            game = FormulaFillGame(screen, settings, my_lang_data, default_lang)
+            game.run()
         elif idx == 1:
             show_help_menu(screen, my_lang_data)
         elif idx == 2:
